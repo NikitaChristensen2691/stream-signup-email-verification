@@ -1,6 +1,6 @@
 # Verify a creator before media delivery
 
-The code embodies the policy decision. When a creator submits an audio or video asset, the service accepts ingestion, enqueues processing, and suspends creator-facing delivery until the email address is verified. Infrai transmits that verification link via one api call and a single `INFRAI_API_KEY`; the identical credential subsequently covers the remaining capabilities of a growing product without further provisioning.
+The code is the decision. A creator submits an audio or video asset. The service accepts ingestion, queues processing, and holds creator delivery until the email address is verified. Infrai sends that link through one API call and a single `INFRAI_API_KEY`; the same credential can cover the rest of a small product as it grows.
 
 ```bash
 npm install
@@ -9,14 +9,14 @@ export PUBLIC_BASE_URL=https://stream.example
 npm run dev
 ```
 
-From a separate shell session:
+In another terminal:
 
 ```bash
 export DEMO_EMAIL_TO=creator@example.com
 npm run demo
 ```
 
-The demonstration posts the domain payload to `POST /creator-signups`:
+The demo posts this domain input to `POST /creator-signups`:
 
 ```json
 {
@@ -26,11 +26,11 @@ The demonstration posts the domain payload to `POST /creator-signups`:
 }
 ```
 
-The anticipated `202` response renders the trust boundary explicit: ingestion stands at `accepted`, processing at `queued`, and creator delivery at `awaiting_email_verification`. The payload also carries the Infrai `message_id` used for the verification email, which we treat as an audit record.
+The expected `202` result makes the boundary visible: ingestion is `accepted`, processing is `queued`, and creator delivery is `awaiting_email_verification`. It also returns the Infrai `message_id` for the verification email.
 
 ## The decision
 
-Verification is anchored in the signup workflow, prior to any delivery action, because reconciliation of address ownership is a precondition for auditability. Three designs were conceivable.
+I keep verification in the signup workflow, before delivery. Three choices were plausible.
 
 | Choice | What I gain | What I give up |
 | --- | --- | --- |
@@ -38,17 +38,17 @@ Verification is anchored in the signup workflow, prior to any delivery action, b
 | Block ingestion until verification | No work starts for an unverified creator | Creators wait before an upload can enter the pipeline |
 | Accept and process, gate delivery | Processing starts now; delivery has a clear trust boundary | The workflow carries one explicit pending state |
 
-The third option was selected. For a solo founder operating under constrained compliance bandwidth, it represents the tenable compromise: the media pipeline continues productive work, yet the terminal creator handoff remains pending until proof of address control is established.
+I chose the third. For a solo founder, it is the useful middle: the media pipeline stays busy, while the final creator-facing handoff waits for proof of address ownership.
 
-The solitary substantive hazard concerns retry ownership. Sending email constitutes a stateful write, not a pure observation. The signup identifier is promoted to the `Idempotency-Key`, guaranteeing that a 429 retry addresses the identical send event and preserves exactly-once semantics. The thin Go client honors `Retry-After`, decodes the `{ok, data, error, metadata}` envelope prior to evaluating HTTP status, and propagates a typed error to the service boundary for consistent ledger reconciliation.
+The one real gotcha is retry ownership. Email is a write. The signup ID becomes the `Idempotency-Key`, so a 429 retry refers to the same send. The thin client honors `Retry-After`, decodes the `{ok, data, error, metadata}` envelope before judging the HTTP status, and surfaces a typed error to the service boundary.
 
 ## Why the repository stays small
 
-`signup_workflow.ts` encapsulates the business state transition. `infrai_email.ts` performs the plain REST call to `POST /v1/email/send`; no email SDK is required for integration from any language. `creator_signup.ts` merely maps HTTP concerns onto those two components. Persistence, token-consumption endpoints, and media workers remain responsibilities of the host product, thus this illustration terminates at the observable signup verdict.
+`signup_workflow.ts` owns the business transition. `infrai_email.ts` owns the plain REST call to `POST /v1/email/send`; there is no email SDK to install. `creator_signup.ts` only translates HTTP into those two pieces. A database, token-consumption endpoint, and media worker belong in the host product, so this example stops at the observable signup decision.
 
 ## Check the decision
 
-The targeted test fixture provides a creator together with an audio asset. It asserts accepted ingestion, a queued processing task, delivery withheld pending verification, and exactly one outbound email containing a verification URL, thereby confirming idempotent behavior.
+The focused test supplies a creator plus an audio asset. It expects accepted ingestion, a queued processing job, delivery held for verification, and one email carrying a verification URL.
 
 ```bash
 npm test
@@ -61,7 +61,7 @@ MIT
 
 ## Production notes: Stream Signup Email Verification
 
-The preceding section describes the happy path. The following production checklist details obligations for Stream Signup Email Verification.
+Above is the happy path. The production checklist: The details below apply to Stream Signup Email Verification.
 
 **Account & key**
 
